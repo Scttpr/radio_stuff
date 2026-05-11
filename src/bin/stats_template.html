@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Annuaire ANFR — statistiques</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0f1419;
+  --card: #1a2030;
+  --border: #2a3245;
+  --text: #e6e8ec;
+  --muted: #8a93a6;
+  --accent: #4f8cff;
+  --accent-2: #a855f7;
+  --accent-3: #10b981;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; }
+body { padding: 24px; max-width: 1400px; margin: 0 auto; }
+h1 { margin: 0 0 4px; font-size: 28px; font-weight: 600; }
+.subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.kpi-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.kpi-value { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi-sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; margin-bottom: 16px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; min-height: 280px; }
+.card h2 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+.card .desc { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+.span-4 { grid-column: span 4; }
+.span-6 { grid-column: span 6; }
+.span-8 { grid-column: span 8; }
+.span-12 { grid-column: span 12; }
+@media (max-width: 900px) {
+  .span-4, .span-6, .span-8 { grid-column: span 12; }
+}
+.chart-wrap { position: relative; height: 320px; }
+.chart-wrap.tall { height: 560px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.footer { color: var(--muted); font-size: 11px; margin-top: 16px; text-align: center; }
+.footer .caveat { display: block; margin-top: 4px; }
+</style>
+</head>
+<body>
+<h1>Annuaire ANFR — statistiques</h1>
+<div class="subtitle" id="subtitle"></div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="grid">
+  <div class="card span-6">
+    <h2>Répartition par classe d'indicatif</h2>
+    <div class="desc">Plages F<i>n</i> attendues (F0 = novice, F1/F4 = HAREC, F5/F6/F8 = historique).</div>
+    <div class="chart-wrap"><canvas id="chartPrefix"></canvas></div>
+  </div>
+  <div class="card span-6">
+    <h2>Répartition par région</h2>
+    <div class="desc">Échelle régionale (post-2016), déduite du code postal.</div>
+    <div class="chart-wrap"><canvas id="chartRegion"></canvas></div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card span-12">
+    <h2>Top départements</h2>
+    <div class="desc">Échelle départementale, hors liste orange et records sans code postal.</div>
+    <div class="chart-wrap tall"><canvas id="chartDepts"></canvas></div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card span-6">
+    <h2>Top communes</h2>
+    <div class="desc">Échelle communale (les 30 plus représentées).</div>
+    <table id="tableCommunes"><thead><tr><th>#</th><th>Commune</th><th class="num">Opérateurs</th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="card span-6">
+    <h2>Top prénoms</h2>
+    <div class="desc">Démographie en clin d'œil — toutes plages confondues.</div>
+    <table id="tablePrenoms"><thead><tr><th>#</th><th>Prénom</th><th class="num">Opérateurs</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
+
+<div class="footer" id="footer"></div>
+
+<script>
+const STATS = __STATS_JSON__;
+
+Chart.defaults.color = '#8a93a6';
+Chart.defaults.font.family = "system-ui, sans-serif";
+Chart.defaults.borderColor = '#2a3245';
+
+const fmt = new Intl.NumberFormat('fr-FR');
+const pct = (x) => (x * 100).toFixed(1) + ' %';
+
+document.getElementById('subtitle').textContent =
+  `Généré le ${new Date(STATS.generated_at).toLocaleString('fr-FR')}`;
+
+const feminineSharePct = STATS.totals.active
+  ? pct(STATS.totals.feminine / STATS.totals.active)
+  : '—';
+
+const kpis = [
+  { label: 'Opérateurs actifs', value: fmt.format(STATS.totals.active) },
+  { label: 'Femmes (estimées)', value: fmt.format(STATS.totals.feminine), sub: `${feminineSharePct} du total` },
+  { label: 'Géolocalisables', value: fmt.format(STATS.totals.geocodable), sub: 'CP exploitable' },
+  { label: 'Liste orange', value: fmt.format(STATS.totals.liste_orange), sub: 'adresse masquée' },
+];
+const kpisEl = document.getElementById('kpis');
+for (const k of kpis) {
+  const div = document.createElement('div');
+  div.className = 'kpi';
+  div.innerHTML = `<div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div>${k.sub ? `<div class="kpi-sub">${k.sub}</div>` : ''}`;
+  kpisEl.appendChild(div);
+}
+
+// Bar chart: par préfixe FX
+new Chart(document.getElementById('chartPrefix'), {
+  type: 'bar',
+  data: {
+    labels: STATS.by_prefix.map(p => p.prefix),
+    datasets: [{ data: STATS.by_prefix.map(p => p.active), backgroundColor: '#4f8cff' }],
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { ticks: { callback: v => fmt.format(v) } },
+    },
+  },
+});
+
+// Bar chart: par région
+new Chart(document.getElementById('chartRegion'), {
+  type: 'bar',
+  data: {
+    labels: STATS.by_region.map(b => b.label),
+    datasets: [{ data: STATS.by_region.map(b => b.count), backgroundColor: '#a855f7' }],
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { callback: v => fmt.format(v) } },
+      y: { grid: { display: false } },
+    },
+  },
+});
+
+// Bar chart: top départements
+const depts = STATS.top_depts.slice(0, 30);
+new Chart(document.getElementById('chartDepts'), {
+  type: 'bar',
+  data: {
+    labels: depts.map(d => `${d.code} · ${d.name}`),
+    datasets: [{ data: depts.map(d => d.count), backgroundColor: '#10b981' }],
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { callback: v => fmt.format(v) } },
+      y: { grid: { display: false } },
+    },
+  },
+});
+
+// Tables
+function fillTable(id, rows, cols) {
+  const tbody = document.querySelector(`#${id} tbody`);
+  rows.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = cols(r, i);
+    tbody.appendChild(tr);
+  });
+}
+
+fillTable('tableCommunes', STATS.top_communes, (r, i) =>
+  `<td>${i + 1}</td><td>${r.label}</td><td class="num">${fmt.format(r.count)}</td>`);
+
+fillTable('tablePrenoms', STATS.top_prenoms, (r, i) =>
+  `<td>${i + 1}</td><td>${r.label}</td><td class="num">${fmt.format(r.count)}</td>`);
+
+document.getElementById('footer').innerHTML =
+  `Source : annuaire-amateurs.anfr.fr — agrégats calculés localement.
+   <span class="caveat">Le compteur « femmes » est une estimation par liste de prénoms français usuels ; les prénoms ambigus (Dominique, Camille, Claude) ou étrangers ne sont pas comptés.</span>`;
+</script>
+</body>
+</html>

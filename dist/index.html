@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annuaire ANFR — radioamateurs français</title>
+<style>
+:root {
+  --bg: #0f1419;
+  --card: #1a2030;
+  --border: #2a3245;
+  --text: #e6e8ec;
+  --muted: #8a93a6;
+  --accent: #4f8cff;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; }
+body { padding: 48px 24px; max-width: 720px; margin: 0 auto; min-height: 100vh; }
+h1 { margin: 0 0 8px; font-size: 28px; font-weight: 600; }
+.intro { color: var(--muted); line-height: 1.6; font-size: 14px; }
+.intro a { color: var(--accent); }
+.links { display: grid; gap: 12px; margin: 32px 0; }
+a.card { display: block; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; color: var(--text); text-decoration: none; transition: border-color 0.15s; }
+a.card:hover { border-color: var(--accent); }
+.card h2 { margin: 0 0 4px; font-size: 17px; font-weight: 600; }
+.card .desc { color: var(--muted); font-size: 13px; }
+footer { color: var(--muted); font-size: 12px; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+footer a { color: var(--muted); }
+code { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>Annuaire ANFR — radioamateurs</h1>
+<p class="intro">
+  Vues agrégées du registre des opérateurs radioamateurs français, calculées à partir du
+  <a href="https://annuaire-amateurs.anfr.fr/">site ANFR</a>.
+  Opérateurs sur liste orange exclus, données publiques uniquement.
+</p>
+
+<div class="links">
+  <a class="card" href="stats.html">
+    <h2>Statistiques</h2>
+    <div class="desc">Répartition par classe d'indicatif (FX), région, département, communes et prénoms.</div>
+  </a>
+  <a class="card" href="map.html">
+    <h2>Carte</h2>
+    <div class="desc">Opérateurs cartographiés par code postal (centre de commune).</div>
+  </a>
+</div>
+
+<footer>
+  Données agrégées localement par <code>anfr_scrape</code> ·
+  <a href="https://github.com/scttpr/anfr_annuaire">source sur GitHub</a>
+</footer>
+</body>
+</html>

@@ -1,0 +1,47 @@
+[package]
+name = "anfr_scrape"
+version = "0.1.0"
+edition = "2024"
+description = "Scraper de l'annuaire des radioamateurs ANFR"
+license = "MIT"
+readme = "README.txt"
+repository = "https://github.com/scttpr/anfr_annuaire"
+keywords = ["anfr", "radio", "amateur", "scraper"]
+categories = ["command-line-utilities"]
+publish = false
+
+[dependencies]
+scraper = "0.26"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "native-tls", "cookies"] }
+url = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+
+[[bin]]
+name = "anfr_scrape"
+path = "src/main.rs"
+
+[[bin]]
+name = "anfr_map"
+path = "src/bin/map.rs"
+
+[[bin]]
+name = "anfr_stats"
+path = "src/bin/stats.rs"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+correctness = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+# Projet sans rustdoc public — on ne demande pas de sections # Errors/# Panics
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"

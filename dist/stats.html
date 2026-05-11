@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Annuaire ANFR — statistiques</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0f1419;
+  --card: #1a2030;
+  --border: #2a3245;
+  --text: #e6e8ec;
+  --muted: #8a93a6;
+  --accent: #4f8cff;
+  --accent-2: #a855f7;
+  --accent-3: #10b981;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; }
+body { padding: 24px; max-width: 1400px; margin: 0 auto; }
+h1 { margin: 0 0 4px; font-size: 28px; font-weight: 600; }
+.subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.kpi-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.kpi-value { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi-sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; margin-bottom: 16px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; min-height: 280px; }
+.card h2 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+.card .desc { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+.span-4 { grid-column: span 4; }
+.span-6 { grid-column: span 6; }
+.span-8 { grid-column: span 8; }
+.span-12 { grid-column: span 12; }
+@media (max-width: 900px) {
+  .span-4, .span-6, .span-8 { grid-column: span 12; }
+}
+.chart-wrap { position: relative; height: 320px; }
+.chart-wrap.tall { height: 560px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.footer { color: var(--muted); font-size: 11px; margin-top: 16px; text-align: center; }
+.footer .caveat { display: block; margin-top: 4px; }
+</style>
+</head>
+<body>
+<h1>Annuaire ANFR — statistiques</h1>
+<div class="subtitle" id="subtitle"></div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="grid">
+  <div class="card span-6">
+    <h2>Répartition par classe d'indicatif</h2>
+    <div class="desc">Plages F<i>n</i> attendues (F0 = novice, F1/F4 = HAREC, F5/F6/F8 = historique).</div>
+    <div class="chart-wrap"><canvas id="chartPrefix"></canvas></div>
+  </div>
+  <div class="card span-6">
+    <h2>Répartition par région</h2>
+    <div class="desc">Échelle régionale (post-2016), déduite du code postal.</div>
+    <div class="chart-wrap"><canvas id="chartRegion"></canvas></div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card span-12">
+    <h2>Top départements</h2>
+    <div class="desc">Échelle départementale, hors liste orange et records sans code postal.</div>
+    <div class="chart-wrap tall"><canvas id="chartDepts"></canvas></div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card span-6">
+    <h2>Top communes</h2>
+    <div class="desc">Échelle communale (les 30 plus représentées).</div>
+    <table id="tableCommunes"><thead><tr><th>#</th><th>Commune</th><th class="num">Opérateurs</th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="card span-6">
+    <h2>Top prénoms</h2>
+    <div class="desc">Démographie en clin d'œil — toutes plages confondues.</div>
+    <table id="tablePrenoms"><thead><tr><th>#</th><th>Prénom</th><th class="num">Opérateurs</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
+
+<div class="footer" id="footer"></div>
+
+<script>
+const STATS = {"generated_at":"2026-05-11T17:50:20.552014919+00:00","totals":{"active":14897,"geocodable":13435,"liste_orange":1462,"feminine":258},"by_prefix":[{"prefix":"F0","active":461},{"prefix":"F1","active":2964},{"prefix":"F4","active":5493},{"prefix":"F5","active":2749},{"prefix":"F6","active":2447},{"prefix":"F8","active":783}],"by_region":[{"label":"Nouvelle-Aquitaine","count":1875},{"label":"Occitanie","count":1674},{"label":"Auvergne-Rhône-Alpes","count":1667},{"label":"Île-de-France","count":1487},{"label":"Grand Est","count":1252},{"label":"Provence-Alpes-Côte d'Azur","count":1136},{"label":"Hauts-de-France","count":1102},{"label":"Bretagne","count":688},{"label":"Pays de la Loire","count":687},{"label":"Bourgogne-Franche-Comté","count":643},{"label":"Centre-Val de Loire","count":593},{"label":"Normandie","count":581},{"label":"Inconnu","count":46},{"label":"Nouvelle-Calédonie","count":4}],"top_depts":[{"code":"33","name":"Gironde","count":432},{"code":"59","name":"Nord","count":414},{"code":"31","name":"Haute-Garonne","count":397},{"code":"13","name":"Bouches-du-Rhône","count":338},{"code":"38","name":"Isère","count":333},{"code":"83","name":"Var","count":288},{"code":"77","name":"Seine-et-Marne","count":287},{"code":"34","name":"Hérault","count":278},{"code":"62","name":"Pas-de-Calais","count":274},{"code":"06","name":"Alpes-Maritimes","count":271},{"code":"57","name":"Moselle","count":270},{"code":"78","name":"Yvelines","count":268},{"code":"17","name":"Charente-Maritime","count":240},{"code":"67","name":"Bas-Rhin","count":237},{"code":"44","name":"Loire-Atlantique","count":236},{"code":"69","name":"Rhône","count":230},{"code":"91","name":"Essonne","count":228},{"code":"29","name":"Finistère","count":225},{"code":"74","name":"Haute-Savoie","count":217},{"code":"76","name":"Seine-Maritime","count":203},{"code":"30","name":"Gard","count":181},{"code":"35","name":"Ille-et-Vilaine","count":178},{"code":"85","name":"Vendée","count":178},{"code":"92","name":"Hauts-de-Seine","count":175},{"code":"54","name":"Meurthe-et-Moselle","count":174},{"code":"24","name":"Dordogne","count":172},{"code":"68","name":"Haut-Rhin","count":172},{"code":"95","name":"Val-d'Oise","count":169},{"code":"71","name":"Saône-et-Loire","count":167},{"code":"22","name":"Côtes-d'Armor","count":157},{"code":"75","name":"Paris","count":152},{"code":"87","name":"Haute-Vienne","count":151},{"code":"86","name":"Vienne","count":149},{"code":"60","name":"Oise","count":148},{"code":"01","name":"Ain","count":147},{"code":"63","name":"Puy-de-Dôme","count":147},{"code":"37","name":"Indre-et-Loire","count":146},{"code":"81","name":"Tarn","count":142},{"code":"84","name":"Vaucluse","count":142},{"code":"80","name":"Somme","count":140},{"code":"45","name":"Loiret","count":138},{"code":"40","name":"Landes","count":133},{"code":"64","name":"Pyrénées-Atlantiques","count":131},{"code":"11","name":"Aude","count":129},{"code":"26","name":"Drôme","count":128},{"code":"56","name":"Morbihan","count":128},{"code":"16","name":"Charente","count":127},{"code":"42","name":"Loire","count":127},{"code":"02","name":"Aisne","count":126},{"code":"66","name":"Pyrénées-Orientales","count":124},{"code":"94","name":"Val-de-Marne","count":122},{"code":"49","name":"Maine-et-Loire","count":119},{"code":"79","name":"Deux-Sèvres","count":117},{"code":"72","name":"Sarthe","count":115},{"code":"14","name":"Calvados","count":114},{"code":"21","name":"Côte-d'Or","count":110},{"code":"47","name":"Lot-et-Garonne","count":106},{"code":"50","name":"Manche","count":105},{"code":"51","name":"Marne","count":105},{"code":"73","name":"Savoie","count":105},{"code":"27","name":"Eure","count":103},{"code":"03","name":"Allier","count":94},{"code":"88","name":"Vosges","count":94},{"code":"41","name":"Loir-et-Cher","count":90},{"code":"25","name":"Doubs","count":89},{"code":"93","name":"Seine-Saint-Denis","count":86},{"code":"19","name":"Corrèze","count":84},{"code":"28","name":"Eure-et-Loir","count":81},{"code":"82","name":"Tarn-et-Garonne","count":80},{"code":"12","name":"Aveyron","count":75},{"code":"18","name":"Cher","count":75},{"code":"09","name":"Ariège","count":69},{"code":"65","name":"Hautes-Pyrénées","count":69},{"code":"89","name":"Yonne","count":68},{"code":"58","name":"Nièvre","count":66},{"code":"07","name":"Ardèche","count":65},{"code":"36","name":"Indre","count":63},{"code":"46","name":"Lot","count":62},{"code":"39","name":"Jura","count":59},{"code":"10","name":"Aube","count":58},{"code":"32","name":"Gers","count":57},{"code":"61","name":"Orne","count":56},{"code":"04","name":"Alpes-de-Haute-Provence","count":53},{"code":"08","name":"Ardennes","count":51},{"code":"43","name":"Haute-Loire","count":51},{"code":"52","name":"Haute-Marne","count":48},{"code":"70","name":"Haute-Saône","count":46},{"code":"99","name":"Inconnu","count":46},{"code":"05","name":"Hautes-Alpes","count":44},{"code":"55","name":"Meuse","count":43},{"code":"53","name":"Mayenne","count":39},{"code":"90","name":"Territoire de Belfort","count":38},{"code":"23","name":"Creuse","count":33},{"code":"15","name":"Cantal","count":23},{"code":"48","name":"Lozère","count":11},{"code":"988","name":"Nouvelle-Calédonie","count":4}],"top_communes":[{"label":"PARIS","count":151},{"label":"MARSEILLE","count":90},{"label":"TOULOUSE","count":76},{"label":"NICE","count":58},{"label":"LYON","count":40},{"label":"MONTPELLIER","count":40},{"label":"LIMOGES","count":38},{"label":"STRASBOURG","count":33},{"label":"DIJON","count":32},{"label":"LE HAVRE","count":31},{"label":"TOULON","count":30},{"label":"GRENOBLE","count":29},{"label":"NANTES","count":29},{"label":"ANTIBES","count":27},{"label":"LE MANS","count":27},{"label":"RENNES","count":27},{"label":"BREST","count":26},{"label":"BORDEAUX","count":24},{"label":"CASTRES","count":22},{"label":"NIMES","count":22},{"label":"PESSAC","count":22},{"label":"REIMS","count":21},{"label":"ANGERS","count":20},{"label":"LA SEYNE SUR MER","count":20},{"label":"AIX EN PROVENCE","count":19},{"label":"GRASSE","count":19},{"label":"MERIGNAC","count":19},{"label":"POITIERS","count":19},{"label":"VILLEURBANNE","count":19},{"label":"AMIENS","count":18}],"top_prenoms":[{"label":"MICHEL","count":570},{"label":"ALAIN","count":420},{"label":"PHILIPPE","count":418},{"label":"BERNARD","count":330},{"label":"CHRISTIAN","count":329},{"label":"PATRICK","count":304},{"label":"DANIEL","count":283},{"label":"PIERRE","count":279},{"label":"GERARD","count":253},{"label":"JACQUES","count":234},{"label":"CLAUDE","count":233},{"label":"ERIC","count":209},{"label":"JEAN","count":201},{"label":"PASCAL","count":195},{"label":"CHRISTOPHE","count":192},{"label":"ANDRE","count":172},{"label":"JEAN PIERRE","count":171},{"label":"DOMINIQUE","count":169},{"label":"LAURENT","count":157},{"label":"DIDIER","count":153},{"label":"FREDERIC","count":144},{"label":"THIERRY","count":144},{"label":"FRANCOIS","count":142},{"label":"GUY","count":142},{"label":"OLIVIER","count":138},{"label":"JEAN-PIERRE","count":136},{"label":"MARC","count":133},{"label":"SERGE","count":127},{"label":"JEAN CLAUDE","count":126},{"label":"YVES","count":126}]};
+
+Chart.defaults.color = '#8a93a6';
+Chart.defaults.font.family = "system-ui, sans-serif";
+Chart.defaults.borderColor = '#2a3245';
+
+const fmt = new Intl.NumberFormat('fr-FR');
+const pct = (x) => (x * 100).toFixed(1) + ' %';
+
+document.getElementById('subtitle').textContent =
+  `Généré le ${new Date(STATS.generated_at).toLocaleString('fr-FR')}`;
+
+const feminineSharePct = STATS.totals.active
+  ? pct(STATS.totals.feminine / STATS.totals.active)
+  : '—';
+
+const kpis = [
+  { label: 'Opérateurs actifs', value: fmt.format(STATS.totals.active) },
+  { label: 'Femmes (estimées)', value: fmt.format(STATS.totals.feminine), sub: `${feminineSharePct} du total` },
+  { label: 'Géolocalisables', value: fmt.format(STATS.totals.geocodable), sub: 'CP exploitable' },
+  { label: 'Liste orange', value: fmt.format(STATS.totals.liste_orange), sub: 'adresse masquée' },
+];
+const kpisEl = document.getElementById('kpis');
+for (const k of kpis) {
+  const div = document.createElement('div');
+  div.className = 'kpi';
+  div.innerHTML = `<div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div>${k.sub ? `<div class="kpi-sub">${k.sub}</div>` : ''}`;
+  kpisEl.appendChild(div);
+}
+
+// Bar chart: par préfixe FX
+new Chart(document.getElementById('chartPrefix'), {
+  type: 'bar',
+  data: {
+    labels: STATS.by_prefix.map(p => p.prefix),
+    datasets: [{ data: STATS.by_prefix.map(p => p.active), backgroundColor: '#4f8cff' }],
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { ticks: { callback: v => fmt.format(v) } },
+    },
+  },
+});
+
+// Bar chart: par région
+new Chart(document.getElementById('chartRegion'), {
+  type: 'bar',
+  data: {
+    labels: STATS.by_region.map(b => b.label),
+    datasets: [{ data: STATS.by_region.map(b => b.count), backgroundColor: '#a855f7' }],
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { callback: v => fmt.format(v) } },
+      y: { grid: { display: false } },
+    },
+  },
+});
+
+// Bar chart: top départements
+const depts = STATS.top_depts.slice(0, 30);
+new Chart(document.getElementById('chartDepts'), {
+  type: 'bar',
+  data: {
+    labels: depts.map(d => `${d.code} · ${d.name}`),
+    datasets: [{ data: depts.map(d => d.count), backgroundColor: '#10b981' }],
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { callback: v => fmt.format(v) } },
+      y: { grid: { display: false } },
+    },
+  },
+});
+
+// Tables
+function fillTable(id, rows, cols) {
+  const tbody = document.querySelector(`#${id} tbody`);
+  rows.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = cols(r, i);
+    tbody.appendChild(tr);
+  });
+}
+
+fillTable('tableCommunes', STATS.top_communes, (r, i) =>
+  `<td>${i + 1}</td><td>${r.label}</td><td class="num">${fmt.format(r.count)}</td>`);
+
+fillTable('tablePrenoms', STATS.top_prenoms, (r, i) =>
+  `<td>${i + 1}</td><td>${r.label}</td><td class="num">${fmt.format(r.count)}</td>`);
+
+document.getElementById('footer').innerHTML =
+  `Source : annuaire-amateurs.anfr.fr — agrégats calculés localement.
+   <span class="caveat">Le compteur « femmes » est une estimation par liste de prénoms français usuels ; les prénoms ambigus (Dominique, Camille, Claude) ou étrangers ne sont pas comptés.</span>`;
+</script>
+</body>
+</html>

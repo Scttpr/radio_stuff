@@ -1,0 +1,10 @@
+.direnv/
+.envrc.local
+target/
+
+# Secrets et données brutes / volumineuses
+data/session.json
+data/indicatifs*
+
+# Originaux des screenshots avant caviardage — local-only
+*.orig.png
